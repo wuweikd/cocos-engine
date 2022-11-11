@@ -29,7 +29,6 @@ require('./CCTiledMapAsset');
 require('./CCTiledLayer');
 require('./CCTiledTile');
 require('./CCTiledObjectGroup');
-require('./ShareCullingTiledLayer');
 
 /**
  * !#en The orientation of tiled map.
@@ -333,7 +332,26 @@ let TiledMap = cc.Class({
             default: null,
             type: cc.TiledMapAsset
         },
-        shareCulling: false,
+        shareCulling: {
+            tooltip: '是否共享剪裁区域，瓦片地图层级多开启',
+            type: cc.Boolean,
+            default: false,
+        }, // 是否共享剪裁区域
+        ifLazyCulling: {
+            tooltip: '是否延迟剪裁，默认每一帧剪裁',
+            type: cc.Boolean,
+            default: false,
+        },
+        lazyTime: {
+            tooltip: '延迟剪裁时间(ms), 开启ifLazyCulling生效',
+            type: cc.Integer,
+            default: 1000,
+        },
+        lazyPx: {
+            tooltip: '剪裁提前量, 开启ifLazyCulling生效',
+            type: cc.Integer,
+            default: 50,
+        },
         /**
          * !#en The TiledMap Asset.
          * !#zh TiledMap 资源。
@@ -724,9 +742,16 @@ let TiledMap = cc.Class({
                         layer = child.addComponent(cc.TiledLayer);
                     }
 
+                    let lazyObj = null;
+                    if (this.ifLazyCulling) {
+                        lazyObj = {
+                            lazyPx: this.lazyPx,
+                            lazyTime: this.lazyTime,
+                        };
+                    }
 
                     // 此处修改 传递firstTmxLayer 记录firstTmxLayer
-                    layer._init(layerInfo, mapInfo, tilesets, textures, texGrids, firstTmxLayer);
+                    layer._init(layerInfo, mapInfo, tilesets, textures, texGrids, firstTmxLayer, lazyObj);
                     if (this.shareCulling) {
                         firstTmxLayer = firstTmxLayer || layer;
                     }

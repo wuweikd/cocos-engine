@@ -57,6 +57,11 @@ let TiledUserNodeData = cc.Class({
 let TiledLayer = cc.Class({
     name: 'cc.TiledLayer',
 
+    // 此处修改, 上传剪裁的时间,用于节流剪裁
+    _lastCullingTime: 0,
+    _lazyObj: null,
+    // 修改结束
+
     // Inherits from the abstract class directly,
     // because TiledLayer not create or maintains the sgNode by itself.
     extends: RenderComponent,
@@ -817,11 +822,27 @@ let TiledLayer = cc.Class({
         return result;
     },
 
+    // 此处修改，强行渲染此层
+    foreCulling() {
+        this._updateCulling();
+    },
+    // 修改结束
     _updateCulling () {
+
         // console.log(this.node._name, 1);
         if (CC_EDITOR) {
             this.enableCulling(false);
         } else if (this._enableCulling) {
+            // 此处修改
+            if (this._lazyObj) {
+                if (this._lastCullingTime + this._lazyObj.lazyTime > new Date().getTime()) {
+                    return;
+                } else {
+                    this._lastCullingTime = new Date().getTime();
+                }
+            }
+            // 修改结束
+
             // 此处修改 若不为首个layer 直接复用firstLayer的结果
             // this._firstTmxLayer不为空时 表示当前layer不是首个layer
             let firstTmxLayer = this._firstTmxLayer;
@@ -836,17 +857,21 @@ let TiledLayer = cc.Class({
             this.node._updateWorldMatrix();
             Mat4.invert(_mat4_temp, this.node._worldMatrix);
             let rect = cc.visibleRect;
+            // 此处修改
+            const extraWidth = this._lazyObj && this._lazyObj.lazyPx || 0; // 额外的渲染宽度
+            console.log('reserveLine--->', extraWidth);
+            // 修改结束
             let camera = cc.Camera.findCamera(this.node);
             if (camera) {
-                _vec2_temp.x = 0;
-                _vec2_temp.y = 0;
+                _vec2_temp.x = -extraWidth/2;
+                _vec2_temp.y = -extraWidth/2;
                 _vec2_temp2.x = _vec2_temp.x + rect.width;
                 _vec2_temp2.y = _vec2_temp.y + rect.height;
                 camera.getScreenToWorldPoint(_vec2_temp, _vec2_temp);
                 camera.getScreenToWorldPoint(_vec2_temp2, _vec2_temp2);
                 Vec2.transformMat4(_vec2_temp, _vec2_temp, _mat4_temp);
                 Vec2.transformMat4(_vec2_temp2, _vec2_temp2, _mat4_temp);
-                this._updateViewPort(_vec2_temp.x, _vec2_temp.y, _vec2_temp2.x - _vec2_temp.x, _vec2_temp2.y - _vec2_temp.y);
+                this._updateViewPort(_vec2_temp.x, _vec2_temp.y, _vec2_temp2.x - _vec2_temp.x + extraWidth, _vec2_temp2.y - _vec2_temp.y + extraWidth);
                 // 此处修改 若为首个layer 缓存_cullingDirty。
                 // _cullingDirty会在填充渲染数据后被改为false 所以需要缓存这里的结果
                 if (!firstTmxLayer) {
@@ -1301,13 +1326,14 @@ let TiledLayer = cc.Class({
     },
 
     // 此处修改 增加firstTmxLayer参数
-    _init (layerInfo, mapInfo, tilesets, textures, texGrids, firstTmxLayer) {
+    _init (layerInfo, mapInfo, tilesets, textures, texGrids, firstTmxLayer, lazyObj) {
         // 修改结束
         this._cullingDirty = true;
         this._layerInfo = layerInfo;
         this._mapInfo = mapInfo;
         // 此处修改 保存firstTmxLayer参数
         this._firstTmxLayer = firstTmxLayer;
+        this._lazyObj = lazyObj; // 如果有表示需要延迟更新
         // 修改结束
 
         let size = layerInfo._layerSize;
