@@ -50,7 +50,7 @@ let _uvd = {x:0, y:0};
 
 let _renderData = null, _ia = null, _fillGrids = 0,
     _vfOffset = 0, _moveX = 0, _moveY = 0, _layerMat = null,
-    _renderer = null, _renderDataList = null, _buffer = null, 
+    _renderer = null, _renderDataList = null, _buffer = null,
     _curMaterial = null, _comp = null, _vbuf = null, _uintbuf = null;
 
 function _visitUserNode (userNode) {
@@ -121,7 +121,7 @@ function _renderNodes (nodeRow, nodeCol) {
 
 /*
 texture coordinate
-a b 
+a b
 c d
 */
 function _flipTexture (inGrid, gid) {
@@ -178,6 +178,7 @@ export default class TmxAssembler extends Assembler {
         let vertices = comp._vertices;
         if (vertices.length === 0 ) return;
 
+        // console.log('==')
         comp._updateCulling();
 
         let layerNode = comp.node;
@@ -212,7 +213,7 @@ export default class TmxAssembler extends Assembler {
             _buffer.request(maxGrids * 4, maxGrids * 6);
 
             switch (comp._renderOrder) {
-                // left top to right down, col add, row sub, 
+                // left top to right down, col add, row sub,
                 case RenderOrder.RightDown:
                     this.traverseGrids(leftDown, rightTop, -1, 1);
                     break;

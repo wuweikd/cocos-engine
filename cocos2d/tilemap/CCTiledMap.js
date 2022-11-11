@@ -29,6 +29,7 @@ require('./CCTiledMapAsset');
 require('./CCTiledLayer');
 require('./CCTiledTile');
 require('./CCTiledObjectGroup');
+require('./ShareCullingTiledLayer');
 
 /**
  * !#en The orientation of tiled map.
@@ -267,7 +268,7 @@ let TMXObjectType = cc.Enum({
      * @static
      */
     POLYLINE : 3,
-    
+
     /**
      * @property IMAGE
      * @type {Number}
@@ -332,6 +333,7 @@ let TiledMap = cc.Class({
             default: null,
             type: cc.TiledMapAsset
         },
+        shareCulling: false,
         /**
          * !#en The TiledMap Asset.
          * !#zh TiledMap 资源。
@@ -658,6 +660,7 @@ let TiledMap = cc.Class({
     },
 
     _buildLayerAndGroup () {
+        console.log('test===================_buildLayerAndGroup');
         let tilesets = this._tilesets;
         let texGrids = this._texGrids;
         let animations = this._animations;
@@ -693,6 +696,10 @@ let TiledMap = cc.Class({
         let textures = this._textures;
         let maxWidth = 0;
         let maxHeight = 0;
+        // 此处修改
+        let firstTmxLayer = null;
+        // 修改结束
+
 
         if (layerInfos && layerInfos.length > 0) {
             for (let i = 0, len = layerInfos.length; i < len; i++) {
@@ -716,8 +723,14 @@ let TiledMap = cc.Class({
                     if (!layer) {
                         layer = child.addComponent(cc.TiledLayer);
                     }
-                    
-                    layer._init(layerInfo, mapInfo, tilesets, textures, texGrids);
+
+
+                    // 此处修改 传递firstTmxLayer 记录firstTmxLayer
+                    layer._init(layerInfo, mapInfo, tilesets, textures, texGrids, firstTmxLayer);
+                    if (this.shareCulling) {
+                        firstTmxLayer = firstTmxLayer || layer;
+                    }
+                    // 修改结束
 
                     // tell the layerinfo to release the ownership of the tiles map.
                     layerInfo.ownTiles = false;
@@ -741,7 +754,7 @@ let TiledMap = cc.Class({
                     if (!image) {
                         image = child.addComponent(cc.Sprite);
                     }
-                    
+
                     let spf = image.spriteFrame || new cc.SpriteFrame();
                     spf.setTexture(texture);
                     image.spriteFrame = spf;
@@ -893,7 +906,7 @@ cc.TiledMap.fillTextureGrids = function (tileset, texGrids, texId) {
 
         grid = {
             // record texture id
-            texId: texId, 
+            texId: texId,
             // record belong to which tileset
             tileset: tileset,
             x: 0, y: 0, width: tw, height: th,

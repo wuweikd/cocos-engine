@@ -91,7 +91,7 @@ let TiledLayer = cc.Class({
         this._layerInfo = null;
         this._mapInfo = null;
 
-        // record max or min tile texture offset, 
+        // record max or min tile texture offset,
         // it will make culling rect more large, which insure culling rect correct.
         this._topOffset = 0;
         this._downOffset = 0;
@@ -168,7 +168,7 @@ let TiledLayer = cc.Class({
         dataComp._row = -1;
         dataComp._col = -1;
         dataComp._tiledLayer = this;
-        
+
         this._nodeLocalPosToLayerPos(node, _vec2_temp);
         this._positionToRowCol(_vec2_temp.x, _vec2_temp.y, _tempRowCol);
         this._addUserNodeToGrid(dataComp, _tempRowCol);
@@ -421,7 +421,7 @@ let TiledLayer = cc.Class({
             x = Math.floor(pos.x);
             y = Math.floor(pos.y);
         }
-        
+
         let ret;
         switch (this._layerOrientation) {
             case cc.TiledMap.Orientation.ORTHO:
@@ -580,7 +580,7 @@ let TiledLayer = cc.Class({
             pos = posOrX;
             flags = flagsOrY;
         }
-        
+
         let ugid = gid & cc.TiledMap.TileFlag.FLIPPED_MASK;
 
         pos.x = Math.floor(pos.x);
@@ -611,7 +611,7 @@ let TiledLayer = cc.Class({
         let gid = ((gidAndFlags & cc.TiledMap.TileFlag.FLIPPED_MASK) >>> 0);
         let grid = this._texGrids[gid];
         let tilesetIdx = grid && grid.texId;
-        
+
         if (grid) {
             this._tiles[idx] = gidAndFlags;
             this._updateVertex(x, y);
@@ -633,7 +633,7 @@ let TiledLayer = cc.Class({
     getTiles() {
         return this._tiles;
     },
-    
+
     /**
      * !#en
      * Returns the tile gid at a given tile coordinate. <br />
@@ -705,7 +705,7 @@ let TiledLayer = cc.Class({
     // 'x, y' is the position of viewPort, which's anchor point is at the center of rect.
     // 'width, height' is the size of viewPort.
     _updateViewPort (x, y, width, height) {
-        if (this._viewPort.width === width && 
+        if (this._viewPort.width === width &&
             this._viewPort.height === height &&
             this._viewPort.x === x &&
             this._viewPort.y === y) {
@@ -743,7 +743,7 @@ let TiledLayer = cc.Class({
         _tempRowCol.col-=reserveLine;
         // insure left down row col greater than 0
         _tempRowCol.row = _tempRowCol.row > 0 ? _tempRowCol.row : 0;
-        _tempRowCol.col = _tempRowCol.col > 0 ? _tempRowCol.col : 0;        
+        _tempRowCol.col = _tempRowCol.col > 0 ? _tempRowCol.col : 0;
 
         if (_tempRowCol.row !== leftDown.row || _tempRowCol.col !== leftDown.col) {
             leftDown.row = _tempRowCol.row;
@@ -818,9 +818,21 @@ let TiledLayer = cc.Class({
     },
 
     _updateCulling () {
+        // console.log(this.node._name, 1);
         if (CC_EDITOR) {
             this.enableCulling(false);
         } else if (this._enableCulling) {
+            // 此处修改 若不为首个layer 直接复用firstLayer的结果
+            // this._firstTmxLayer不为空时 表示当前layer不是首个layer
+            let firstTmxLayer = this._firstTmxLayer;
+            if (!!firstTmxLayer) {
+                this._cullingRect = firstTmxLayer._cullingRect;
+                this._cullingDirty = firstTmxLayer._cacheCullingDirty;
+                // console.timeEnd(this.node._name);
+                return;
+            }
+            // 修改结束
+
             this.node._updateWorldMatrix();
             Mat4.invert(_mat4_temp, this.node._worldMatrix);
             let rect = cc.visibleRect;
@@ -835,8 +847,15 @@ let TiledLayer = cc.Class({
                 Vec2.transformMat4(_vec2_temp, _vec2_temp, _mat4_temp);
                 Vec2.transformMat4(_vec2_temp2, _vec2_temp2, _mat4_temp);
                 this._updateViewPort(_vec2_temp.x, _vec2_temp.y, _vec2_temp2.x - _vec2_temp.x, _vec2_temp2.y - _vec2_temp.y);
+                // 此处修改 若为首个layer 缓存_cullingDirty。
+                // _cullingDirty会在填充渲染数据后被改为false 所以需要缓存这里的结果
+                if (!firstTmxLayer) {
+                    this._cacheCullingDirty = this._cullingDirty;
+                }
+                // 修改结束
             }
         }
+        // console.log(this.node._name, 2);
     },
 
     /**
@@ -889,7 +908,7 @@ let TiledLayer = cc.Class({
             rows = this._layerSize.height,
             cols = this._layerSize.width,
             grids = this._texGrids;
-        
+
         let gid, grid, left, bottom,
             axis, diffX1, diffY1, odd_even, diffX2, diffY2;
 
@@ -955,7 +974,7 @@ let TiledLayer = cc.Class({
 
         let rowData = vertices[cullingRow] = vertices[cullingRow] || {minCol:0, maxCol:0};
         let colData = rowData[cullingCol] = rowData[cullingCol] || {};
-        
+
         // record each row range, it will faster when culling grid
         if (rowData.minCol > cullingCol) {
             rowData.minCol = cullingCol;
@@ -980,7 +999,7 @@ let TiledLayer = cc.Class({
         tileOffset = grid.tileset.tileOffset;
         left += this._offset.x + tileOffset.x;
         bottom += this._offset.y - tileOffset.y;
-        
+
         topBorder = -tileOffset.y + grid.tileset._tileSize.height - mapth;
         topBorder = topBorder < 0 ? 0 : topBorder;
         downBorder = tileOffset.y < 0 ? 0 : tileOffset.y;
@@ -1007,7 +1026,7 @@ let TiledLayer = cc.Class({
         colData.left = left;
         colData.bottom = bottom;
         // this index is tiledmap grid index
-        colData.index = index; 
+        colData.index = index;
 
         this._cullingDirty = true;
     },
@@ -1085,7 +1104,7 @@ let TiledLayer = cc.Class({
         return tile;
     },
 
-    /** 
+    /**
      * !#en
      * Change tile to TiledTile at the specified coordinate.
      * !#zh
@@ -1281,11 +1300,15 @@ let TiledLayer = cc.Class({
         }
     },
 
-    _init (layerInfo, mapInfo, tilesets, textures, texGrids) {
-        
+    // 此处修改 增加firstTmxLayer参数
+    _init (layerInfo, mapInfo, tilesets, textures, texGrids, firstTmxLayer) {
+        // 修改结束
         this._cullingDirty = true;
         this._layerInfo = layerInfo;
         this._mapInfo = mapInfo;
+        // 此处修改 保存firstTmxLayer参数
+        this._firstTmxLayer = firstTmxLayer;
+        // 修改结束
 
         let size = layerInfo._layerSize;
 
@@ -1323,7 +1346,7 @@ let TiledLayer = cc.Class({
             // handle hex map
             const TiledMap = cc.TiledMap;
             const StaggerAxis = TiledMap.StaggerAxis;
-            const StaggerIndex = TiledMap.StaggerIndex;            
+            const StaggerIndex = TiledMap.StaggerIndex;
             let width = 0, height = 0;
 
             this._odd_even = (this._staggerIndex === StaggerIndex.STAGGERINDEX_ODD) ? 1 : -1;
