@@ -58,7 +58,7 @@ let TiledLayer = cc.Class({
     name: 'cc.TiledLayer',
 
     // 此处修改, 上传剪裁的时间,用于节流剪裁
-    _lastCullingTime: 0,
+    _lastCullingTime: new Date().getTime() * 2,
     _lazyObj: null,
     // 修改结束
 
@@ -824,6 +824,7 @@ let TiledLayer = cc.Class({
 
     // 此处修改，强行渲染此层
     foreCulling() {
+        this._lastCullingTime = new Date().getTime();
         this._updateCulling();
     },
     // 修改结束
